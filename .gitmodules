@@ -1,0 +1,12 @@
+[submodule "OnlineJudge"]
+	path = OnlineJudge
+	url = https://github.com/fcu-oj/OnlineJudge.git
+[submodule "OnlineJudgeFE"]
+	path = OnlineJudgeFE
+	url = https://github.com/fcu-oj/OnlineJudgeFE.git
+[submodule "OnlineJudgeCodeView"]
+	path = OnlineJudgeCodeView
+	url = https://github.com/fcu-oj/OnlineJudgeCodeView.git
+[submodule "JudgeServer"]
+	path = JudgeServer
+	url = https://github.com/fcu-oj/JudgeServer.git

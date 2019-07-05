@@ -1,0 +1,101 @@
+version: "3"
+
+services:
+  oj-redis:
+    image: redis
+    restart: always
+    volumes:
+      - ./data/redis:/data
+    networks:
+      default:
+        aliases:
+         - oj-redis
+  
+  oj-postgres:
+    image: postgres:10
+    restart: always
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=onlinejudge
+      - POSTGRES_USER=onlinejudge
+      - POSTGRES_PASSWORD=onlinejudge
+    ports:
+      - "0.0.0.0:5432:5432"
+    networks:
+      default:
+        aliases:
+         - oj-postgres
+
+  judge-server:
+    # image: qduoj/judge-server
+    build: ./JudgeServer
+    restart: always
+    read_only: true
+    cap_drop:
+      - SETPCAP
+      - MKNOD
+      - NET_BIND_SERVICE
+      - SYS_CHROOT
+      - SETFCAP
+      - FSETID
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./data/backend/test_case:/test_case:ro
+      - ./data/judge_server/log:/log
+      - ./data/judge_server/run:/judger
+    environment:
+      - SERVICE_URL=http://judge-server:8080
+      - BACKEND_URL=http://oj-backend:8000/api/judge_server_heartbeat/
+      - TOKEN=8xhH401yCpuTntSkYdbYzcZAteUdBQax
+    networks:
+      default:
+        aliases:
+         - judge-server
+  
+  oj-backend:
+    # image: qduoj/oj-backend
+    build: ./OnlineJudge
+    restart: always
+    depends_on:
+      - oj-redis
+      - oj-postgres
+      - judge-server
+      - codeview
+    volumes:
+      - ./data/backend:/data
+      - ./OnlineJudgeFE/dist:/app/dist
+    environment:
+      - POSTGRES_DB=onlinejudge
+      - POSTGRES_USER=onlinejudge
+      - POSTGRES_PASSWORD=onlinejudge
+      - JUDGE_SERVER_TOKEN=8xhH401yCpuTntSkYdbYzcZAteUdBQax
+      - FORCE_HTTPS=1
+      # - STATIC_CDN_HOST=cdn.oj.com
+    ports:
+      - "0.0.0.0:80:8000"
+      - "0.0.0.0:443:1443"
+    networks:
+      - default
+
+  oj-rsync-master:
+    image: registry.cn-hangzhou.aliyuncs.com/onlinejudge/oj_rsync
+    # image: hub.ahkui.com/onlinejudge/oj_rsync
+    volumes:
+      - ./data/backend/test_case:/test_case:ro
+      - ./data/rsync_master:/log
+    environment:
+      - RSYNC_MODE=master
+      - RSYNC_USER=ojrsync
+      - RSYNC_PASSWORD=8xhH401yCpuTntSkYdbYzcZAteUdBQax
+    ports:
+      - "0.0.0.0:873:873"
+    restart: always
+
+  codeview:
+    build: ./OnlineJudgeCodeView
+    restart: always
+    networks:
+      - default
+
